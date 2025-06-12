@@ -15,13 +15,13 @@ def verify_key(x_api_key: str = Header(...)):
         raise HTTPException(401, "Invalid X-Api-Key")
     return True
 
-@app.get("/", include_in_schema=False)
+# ---------- health-check root ----------
+@app.api_route("/", methods=["GET", "HEAD"], include_in_schema=False)
 def root():
-    # Render’s health-check hits HEAD /
+    # Render’s health-check calls HEAD /
     return {"status": "ok"}
 
 # ---------- ticket endpoints ----------
-
 @app.get("/tickets/search")
 def search_tickets(
     status: Optional[str] = None,
@@ -40,7 +40,6 @@ def list_tickets(page: int = 1, pageSize: int = 25, auth: bool = Depends(verify_
     return cw.list_tickets(page=page, page_size=pageSize)
 
 # ---------- company & contact ----------
-
 @app.get("/companies/{id}")
 def get_company(id: int, auth: bool = Depends(verify_key)):
     return cw.get_company(id)
