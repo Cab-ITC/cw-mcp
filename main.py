@@ -20,6 +20,20 @@ def verify_key(x_api_key: str = Header(...)):
 def root():
     return {"status": "ok"}
 
+# ---------- debug helper  (TEMPORARY) ----------
+@app.get("/debug/key", include_in_schema=False)
+def debug_key(x_api_key: str = Header(None)):
+    """
+    Returns the key your request sent, the key stored on the server,
+    and whether they match. Remove this once 401 issues are solved.
+    """
+    server_key = os.getenv("SERVER_API_KEY")
+    return {
+        "received": x_api_key,
+        "server_var": server_key,
+        "match": x_api_key == server_key,
+    }
+
 # ---------- ticket endpoints ----------
 @app.get("/tickets/search")
 def search_tickets(
