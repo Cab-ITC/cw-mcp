@@ -1,39 +1,48 @@
 import os, base64, requests
+from fastapi import HTTPException
 
 class ConnectWiseClient:
     """
-    Thin wrapper around the ConnectWise REST API.
-    Only GET (read) calls for now.
+    Thin wrapper around the ConnectWise REST API (read-only for now).
     """
+
     def __init__(self):
-        self.company   = os.getenv("CW_COMPANY")     # e.g. ITCUBED
-        self.public    = os.getenv("CW_PUBLIC_KEY")
-        self.private   = os.getenv("CW_PRIVATE_KEY")
-        self.client_id = os.getenv("CW_CLIENT_ID")   # arbitrary 5–32 char string
-        self.base_url  = os.getenv("CW_BASE_URL", "https://api-na.myconnectwise.net/v2025_1")
+        # ---------- credentials ----------
+        self.company   = os.getenv("CW_COMPANY")          # e.g. itcubed
+        self.public    = os.getenv("CW_PUBLIC_KEY")       # from API Keys tab
+        self.private   = os.getenv("CW_PRIVATE_KEY")      # from API Keys tab
+        self.client_id = os.getenv("CW_CLIENT_ID")        # 5-32 chars, letters / numbers / dashes
+
+        # canonical base path *must* include /apis/3.0/
+        self.base_url = os.getenv(
+            "CW_BASE_URL",
+            "https://api-na.myconnectwise.net/v2025_1/apis/3.0"
+        )
         if not all([self.company, self.public, self.private, self.client_id]):
             raise RuntimeError("CW_* env vars not fully set")
 
-        # Basic‑auth header is “CompanyID+PublicKey:PrivateKey”, base64‑encoded
+        # ---------- build session ----------
         creds = f"{self.company}+{self.public}:{self.private}"
         token = base64.b64encode(creds.encode()).decode()
 
         self.session = requests.Session()
         self.session.headers.update({
             "Authorization": f"Basic {token}",
-            "clientId":      self.client_id,
-            "Accept":        "application/json"
+            "ClientID":      self.client_id,  # exact case matters
+            # versioned Accept header required by CW 
+            #   (2025.1 in cloud NA right now – change when CW bumps)
+            "Accept": "application/vnd.connectwise.com+json; version=2025.1"
         })
 
-    # ---------- helper methods ----------
-
-    def _get(self, url, **params):
+    # ---------- helper ----------
+    def _get(self, url: str, **params):
         r = self.session.get(url, params=params, timeout=30)
-        r.raise_for_status()
+        if r.status_code >= 400:
+            # bubble ConnectWise error straight to FastAPI / caller
+            raise HTTPException(status_code=r.status_code, detail=r.text)
         return r.json()
 
-    # ---------- public API used by FastAPI routes ----------
-
+    # ---------- public wrappers ----------
     def search_tickets(self, status=None, page=1, page_size=25):
         params = {"page": page, "pageSize": page_size}
         if status:
