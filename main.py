@@ -15,6 +15,11 @@ def verify_key(x_api_key: str = Header(...)):
         raise HTTPException(401, "Invalid X-Api-Key")
     return True
 
+@app.get("/", include_in_schema=False)
+def root():
+    # Render’s health-check hits HEAD /
+    return {"status": "ok"}
+
 # ---------- ticket endpoints ----------
 
 @app.get("/tickets/search")
