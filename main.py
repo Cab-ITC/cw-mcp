@@ -18,7 +18,6 @@ def verify_key(x_api_key: str = Header(...)):
 # ---------- health-check root ----------
 @app.api_route("/", methods=["GET", "HEAD"], include_in_schema=False)
 def root():
-    # Render’s health-check calls HEAD /
     return {"status": "ok"}
 
 # ---------- ticket endpoints ----------
