@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: connectwise-mcp
+    runtime: docker
+    plan: free  # Hobby tier
+    envVars:
+      - key: SERVER_API_KEY   # key ChatGPT will pass
+        generateValue: true   # Render will create a random one – you can overwrite
+      - key: CW_COMPANY       # your CW company ID
+        sync: false
+      - key: CW_PUBLIC_KEY
+        sync: false
+      - key: CW_PRIVATE_KEY
+        sync: false
+      - key: CW_CLIENT_ID
+        sync: false
+      # CW_BASE_URL not needed unless you use EU/AP endpoints
