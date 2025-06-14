@@ -1,7 +1,7 @@
 import os, uvicorn, yaml
 from typing import Optional
 from fastapi import FastAPI, Header, HTTPException, Depends
-from fastapi.responses import Response
+from fastapi.responses import Response, FileResponse
 from cw_client import ConnectWiseClient
 
 API_KEY = os.getenv("SERVER_API_KEY")
@@ -16,7 +16,12 @@ def verify_key(x_api_key: str = Header(None)):
         raise HTTPException(401, "Invalid X-Api-Key")
     return True
 
-# --- NEW ENDPOINT FOR CHATGPT ACTIONS ---
+# --- NEW ENDPOINT FOR CUSTOM CONNECTOR MANIFEST ---
+@app.get("/.well-known/ai-plugin.json", include_in_schema=False)
+async def get_ai_plugin_json():
+    return FileResponse("ai-plugin.json")
+
+# --- Endpoint for ChatGPT Actions ---
 @app.get("/.well-known/openapi.yaml", include_in_schema=False)
 async def get_openapi_yaml() -> Response:
     openapi_json = app.openapi()
@@ -27,6 +32,8 @@ async def get_openapi_yaml() -> Response:
 @app.api_route("/", methods=["GET", "HEAD"], include_in_schema=False)
 def root():
     return {"status": "ok"}
+
+# ... (rest of your endpoints remain the same) ...
 
 # ---------- ticket endpoints ----------
 @app.get("/tickets/search")
@@ -59,5 +66,5 @@ def get_company(id: int, auth: bool = Depends(verify_key)):
     return cw.get_company(id)
 
 @app.get("/contacts/{id}")
-def get_contact(id: int, auth: bool = Depends(verify_key)):
+def get_contact(id: int, auth:bool = Depends(verify_key)):
     return cw.get_contact(id)
