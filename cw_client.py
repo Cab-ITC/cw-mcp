@@ -31,7 +31,7 @@ class ConnectWiseClient:
             "Accept": "application/vnd.connectwise.com+json; version=2025.1"
         })
         
-        logging.info(f"ConnectWiseClient initialized. Effective headers: {self.session.headers}")
+        logging.info(f"ConnectWiseClient initialized.")
 
 
     # ---------- helper ----------
@@ -53,7 +53,7 @@ class ConnectWiseClient:
     def latest_ticket(self):
         data = self._get(
             f"{self.base_url}/service/tickets",
-            orderBy="_info.lastUpdated desc",
+            orderBy="id desc", # <<<--- THIS IS THE FIX
             pageSize=1
         )
         return data[0] if data else {}
