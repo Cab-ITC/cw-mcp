@@ -30,6 +30,10 @@ class ConnectWiseClient:
             "ClientID":      self.client_id,  # case-sensitive!
             "Accept": "application/vnd.connectwise.com+json; version=2025.1"
         })
+        
+        # DEFINITIVE LOG: Print the headers right after they are set.
+        logging.info(f"ConnectWiseClient initialized. Effective headers: {self.session.headers}")
+
 
     # ---------- helper ----------
     def _get(self, url, **params):
