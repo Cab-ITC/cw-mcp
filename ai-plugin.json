@@ -5,16 +5,11 @@
     "description_for_model": "Plugin for searching and retrieving information from the ITCubed ConnectWise system. Use it to find tickets, companies, and contacts.",
     "description_for_human": "Search ITCubed's ConnectWise for tickets, companies, and contacts.",
     "auth": {
-        "type": "service_http",
-        "authorization_type": "bearer",
-        "verification_tokens": {
-            "openai": "REPLACE_THIS_WITH_A_VERIFICATION_TOKEN_FROM_OPENAI"
-        }
+        "type": "none"
     },
     "api": {
         "type": "openapi",
-        "url": "https://cw-mcp.fly.dev/.well-known/openapi.yaml",
-        "is_user_authenticated": false
+        "url": "https://cw-mcp.fly.dev/.well-known/openapi.yaml"
     },
     "logo_url": "https://www.itcubed.com/wp-content/uploads/2023/12/IT-Cubed-logo-1.png",
     "contact_email": "support@itcubed.com",
