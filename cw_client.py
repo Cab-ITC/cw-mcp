@@ -1,58 +1,58 @@
-import os, base64, requests
+import os, base64, requests, logging
 from fastapi import HTTPException
+
+# Configure logging to make sure messages appear in Render
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class ConnectWiseClient:
     """
-    Thin wrapper around the ConnectWise REST API (read-only for now).
+    Minimal read-only wrapper over ConnectWise Manage REST API.
     """
 
     def __init__(self):
-        # ---------- credentials ----------
-        self.company   = os.getenv("CW_COMPANY")          # e.g. itcubed
-        self.public    = os.getenv("CW_PUBLIC_KEY")       # from API Keys tab
-        self.private   = os.getenv("CW_PRIVATE_KEY")      # from API Keys tab
-        self.client_id = os.getenv("CW_CLIENT_ID")        # 5-32 chars, letters / numbers / dashes
-
-        # canonical base path *must* include /apis/3.0/
-        self.base_url = os.getenv(
+        self.company   = os.getenv("CW_COMPANY")
+        self.public    = os.getenv("CW_PUBLIC_KEY")
+        self.private   = os.getenv("CW_PRIVATE_KEY")
+        self.client_id = os.getenv("CW_CLIENT_ID")
+        self.base_url  = os.getenv(
             "CW_BASE_URL",
             "https://api-na.myconnectwise.net/v2025_1/apis/3.0"
         )
         if not all([self.company, self.public, self.private, self.client_id]):
             raise RuntimeError("CW_* env vars not fully set")
 
-        # ---------- build session ----------
         creds = f"{self.company}+{self.public}:{self.private}"
         token = base64.b64encode(creds.encode()).decode()
 
         self.session = requests.Session()
         self.session.headers.update({
             "Authorization": f"Basic {token}",
-            "ClientID":      self.client_id,  # exact case matters
-            # versioned Accept header required by CW 
-            #   (2025.1 in cloud NA right now – change when CW bumps)
+            "ClientID":      self.client_id,  # case-sensitive!
             "Accept": "application/vnd.connectwise.com+json; version=2025.1"
         })
 
     # ---------- helper ----------
-    def _get(self, url: str, **params):
+    def _get(self, url, **params):
+        logging.info(f"Making upstream ConnectWise request to: {url}")
         r = self.session.get(url, params=params, timeout=30)
         if r.status_code >= 400:
-            # bubble ConnectWise error straight to FastAPI / caller
-            raise HTTPException(status_code=r.status_code, detail=r.text)
+            logging.error(f"Upstream API Error! Status: {r.status_code}. URL: {r.url}. Response Body: '{r.text}'")
+            raise HTTPException(r.status_code, r.text or f"Upstream ConnectWise API returned status {r.status_code} with no detail.")
         return r.json()
 
     # ---------- public wrappers ----------
     def search_tickets(self, status=None, page=1, page_size=25):
-        params = {"page": page, "pageSize": page_size}
+        p = {"page": page, "pageSize": page_size}
         if status:
-            params["conditions"] = f'status/name="{status.capitalize()}"'
-        return self._get(f"{self.base_url}/service/tickets", **params)
+            p["conditions"] = f'status/name="{status.capitalize()}"'
+        return self._get(f"{self.base_url}/service/tickets", **p)
 
     def latest_ticket(self):
-        data = self._get(f"{self.base_url}/service/tickets",
-                         orderBy="_info.lastUpdated desc",
-                         pageSize=1)
+        data = self._get(
+            f"{self.base_url}/service/tickets",
+            orderBy="_info.lastUpdated desc",
+            pageSize=1
+        )
         return data[0] if data else {}
 
     def list_tickets(self, page=1, page_size=25):
