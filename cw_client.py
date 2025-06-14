@@ -51,7 +51,8 @@ class ConnectWiseClient:
         if status:
             conditions.append(f'status/name="{status.capitalize()}"')
         if keyword:
-            conditions.append(f'(summary contains "{keyword}" or initialDescription contains "{keyword}")')
+            # FIX: Only search on the 'summary' field, which is supported.
+            conditions.append(f'summary contains "{keyword}"')
         
         if conditions:
             p["conditions"] = " AND ".join(conditions)
