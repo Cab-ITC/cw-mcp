@@ -36,7 +36,7 @@ class ConnectWiseClient:
 
     # ---------- helper ----------
     def _get(self, url, **params):
-        logging.info(f"Making upstream ConnectWise request to: {url}")
+        logging.info(f"Making upstream ConnectWise request to: {url} with params: {params}")
         r = self.session.get(url, params=params, timeout=30)
         if r.status_code >= 400:
             logging.error(f"Upstream API Error! Status: {r.status_code}. URL: {r.url}. Response Body: '{r.text}'")
@@ -44,22 +44,30 @@ class ConnectWiseClient:
         return r.json()
 
     # ---------- public wrappers ----------
-    def search_tickets(self, status=None, page=1, page_size=25):
+    def search_tickets(self, status=None, keyword=None, page=1, page_size=25):
         p = {"page": page, "pageSize": page_size}
+        
+        conditions = []
         if status:
-            p["conditions"] = f'status/name="{status.capitalize()}"'
+            conditions.append(f'status/name="{status.capitalize()}"')
+        if keyword:
+            conditions.append(f'(summary contains "{keyword}" or initialDescription contains "{keyword}")')
+        
+        if conditions:
+            p["conditions"] = " AND ".join(conditions)
+
         return self._get(f"{self.base_url}/service/tickets", **p)
 
     def latest_ticket(self):
         data = self._get(
             f"{self.base_url}/service/tickets",
-            orderBy="id desc", # <<<--- THIS IS THE FIX
+            orderBy="id desc",
             pageSize=1
         )
         return data[0] if data else {}
 
-    def list_tickets(self, page=1, page_size=25):
-        return self.search_tickets(page=page, page_size=page_size)
+    def list_tickets(self, status=None, keyword=None, page=1, page_size=25):
+        return self.search_tickets(status, keyword, page, page_size)
 
     def get_company(self, id: int):
         return self._get(f"{self.base_url}/company/companies/{id}")
