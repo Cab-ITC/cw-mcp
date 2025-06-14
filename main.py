@@ -1,6 +1,7 @@
-import os, uvicorn
+import os, uvicorn, yaml
 from typing import Optional
 from fastapi import FastAPI, Header, HTTPException, Depends
+from fastapi.responses import Response
 from cw_client import ConnectWiseClient
 
 API_KEY = os.getenv("SERVER_API_KEY")
@@ -14,6 +15,13 @@ def verify_key(x_api_key: str = Header(None)):
     if x_api_key != API_KEY:
         raise HTTPException(401, "Invalid X-Api-Key")
     return True
+
+# --- NEW ENDPOINT FOR CHATGPT ACTIONS ---
+@app.get("/.well-known/openapi.yaml", include_in_schema=False)
+async def get_openapi_yaml() -> Response:
+    openapi_json = app.openapi()
+    openapi_yaml = yaml.dump(openapi_json, indent=2)
+    return Response(content=openapi_yaml, media_type="text/yaml")
 
 # Health check
 @app.api_route("/", methods=["GET", "HEAD"], include_in_schema=False)
@@ -43,7 +51,6 @@ def list_tickets(
     pageSize: int = 25,
     auth: bool = Depends(verify_key)
 ):
-    # This endpoint is now a full alias of search_tickets
     return cw.search_tickets(status, keyword, page, pageSize)
 
 # ---------- company & contact ----------
@@ -54,7 +61,3 @@ def get_company(id: int, auth: bool = Depends(verify_key)):
 @app.get("/contacts/{id}")
 def get_contact(id: int, auth: bool = Depends(verify_key)):
     return cw.get_contact(id)
-
-# This section is not needed for Fly.io deployments
-# if __name__ == "__main__":
-#     uvicorn.run("main:app", host="0.0.0.0", port=8000)
