@@ -63,3 +63,8 @@ def get_contact(id: int, auth: bool = Depends(verify_key)):
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000)
+
+# Triggering a new deployment on Fly.io
+import os, uvicorn
+from typing import Optional
+# ... the rest of the file stays the same
